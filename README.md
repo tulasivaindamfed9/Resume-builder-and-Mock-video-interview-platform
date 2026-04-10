@@ -1,1 +1,0 @@
-# Resume-builder-and-Mock-video-interview-platform
