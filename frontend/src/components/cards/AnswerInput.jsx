@@ -7,7 +7,7 @@ import convertSpeechToText from "../../hooks/convertSpeechToText";
   Props:
   - onSubmit: function to send answer to backend
 */
-const AnswerInput = ({ onSubmit,loading }) => {
+const AnswerInput = ({ onSubmit, loading }) => {
   const { text, listening, startListening, stopListening, setText } =
     convertSpeechToText();
 
@@ -43,11 +43,13 @@ const AnswerInput = ({ onSubmit,loading }) => {
         {/* Submit answer */}
         <button
           onClick={() => {
-            stopListening(); // 🔥 stop mic before submit
+            if (!text.trim()) return; // ✅ prevent empty answer
+
+            stopListening();
             onSubmit(text);
             setText("");
           }}
-           disabled={loading}
+          disabled={loading}
           className="bg-blue-500 px-4 py-2 rounded"
         >
           Submit

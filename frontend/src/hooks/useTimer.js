@@ -8,30 +8,27 @@ import { useState, useEffect } from "react";
   - onTimeUp: function to call when time = 0
   - resetKey: key to trigger timer reset
 */
+
 const useTimer = (seconds, onTimeUp, resetKey) => {
-  // Store remaining time
   const [time, setTime] = useState(seconds);
 
+  // Reset timer when key changes
+  useEffect(() => {
+    setTime(seconds);
+  }, [resetKey, seconds]);
 
   useEffect(() => {
-    setTime(seconds); // reset when question changes
-  }, [resetKey]);
-
-  useEffect(() => {
-    // If time reaches 0 → call function
     if (time === 0) {
       onTimeUp();
       return;
     }
 
-    // Decrease time every 1 second
     const interval = setInterval(() => {
       setTime((prev) => prev - 1);
     }, 1000);
 
-    // Cleanup interval
     return () => clearInterval(interval);
-  }, [time]);
+  }, [time, onTimeUp]);
 
   return time;
 };

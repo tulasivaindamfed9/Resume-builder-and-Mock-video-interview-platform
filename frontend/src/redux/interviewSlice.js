@@ -5,32 +5,57 @@ import { generateQuestions, analyzeAnswer } from "../services/interviewAPI";
 export const fetchQuestions = createAsyncThunk(
   "interview/fetchQuestions",
   async (config, thunkAPI) => {
+    const state = thunkAPI.getState();
+    const key = JSON.stringify(config);
+
+    // ✅ check cache first
+    if (state.interview.cache[key]) {
+      return state.interview.cache[key];
+    }
+
     try {
       const response = await generateQuestions(config);
-      return response;
+      return { data: response, key };
     } catch (error) {
-       // ✅ extract backend error message
-      const message =
-        error.response?.data?.detail || "Something went wrong";
+      const message = error.response?.data?.detail || "Something went wrong";
 
       return thunkAPI.rejectWithValue(message);
     }
-  }
+  },
 );
 
 // api call to analyze answer and get feedback
+// export const analyzeAnswerAPI = createAsyncThunk(
+//   "interview/analyzeAnswer",
+//   async ({ question, answer }, thunkAPI) => {
+//     try {
+//       const response = await analyzeAnswer(question, answer);
+//       return response;
+//     } catch (error) {
+//       return thunkAPI.rejectWithValue(error.message);
+//     }
+//   },
+// );
+
 export const analyzeAnswerAPI = createAsyncThunk(
   "interview/analyzeAnswer",
-    async ({ question, answer }, thunkAPI) => {
-    try {
-      const response = await analyzeAnswer(question, answer);
-      return response;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }   
-    }
-);
+  async ({ question, answer }, thunkAPI) => {
+    let attempts = 0;
 
+    while (attempts < 3) {
+      try {
+        const response = await analyzeAnswer(question, answer);
+        return response;
+      } catch (error) {
+        attempts++;
+
+        if (attempts === 3) {
+          return thunkAPI.rejectWithValue("Failed after 3 retries");
+        }
+      }
+    }
+  }
+);
 
 const initialState = {
   questions: [],
@@ -46,6 +71,8 @@ const initialState = {
     experience: "",
     skills: "",
   },
+
+  cache: {}, // store questions by config key
 };
 
 const interviewSlice = createSlice({
@@ -73,35 +100,43 @@ const interviewSlice = createSlice({
     resetInterview: () => initialState,
   },
 
-    extraReducers: (builder) => {
+  extraReducers: (builder) => {
     builder
-        .addCase(fetchQuestions.pending, (state) => {
-            state.loading = true;
-        })
-        .addCase(fetchQuestions.fulfilled, (state, action) => {
-            state.loading = false;
-            state.questions = action.payload;
-        })
-        .addCase(fetchQuestions.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload;  //store error message from backend
-        })
-        .addCase(analyzeAnswerAPI.pending, (state) => {
-            state.loading = true;
-        })
-        .addCase(analyzeAnswerAPI.fulfilled, (state, action) => {
-            state.loading = false;
-            state.feedback.push(action.payload);
-        })
-        .addCase(analyzeAnswerAPI.rejected, (state) => {
-            state.loading = false;
-        });
-    }
+      .addCase(fetchQuestions.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchQuestions.fulfilled, (state, action) => {
+        state.loading = false;
+
+        // if from cache
+        if (Array.isArray(action.payload)) {
+          state.questions = action.payload;
+        } else {
+          state.questions = action.payload.data;
+
+          // ✅ save in cache
+          state.cache[action.payload.key] = action.payload.data;
+        }
+      })
+      .addCase(fetchQuestions.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload; //store error message from backend
+      })
+      .addCase(analyzeAnswerAPI.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(analyzeAnswerAPI.fulfilled, (state, action) => {
+        state.loading = false;
+        state.feedback.push(action.payload);
+      })
+      .addCase(analyzeAnswerAPI.rejected, (state) => {
+        state.loading = false;
+      });
+  },
 });
 
-
 export const {
-    setConfig,
+  setConfig,
   setQuestions,
   addAnswer,
   setFeedback,

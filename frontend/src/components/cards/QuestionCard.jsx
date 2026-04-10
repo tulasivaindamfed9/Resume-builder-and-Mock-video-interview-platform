@@ -13,12 +13,14 @@ const QuestionCard = ({ question }) => {
   const lastSpokenRef = useRef("");
 
   useEffect(() => {
+     if (!question) return;
+
     // Speak only if question changed
     if (question && lastSpokenRef.current !== question) {
       speak(question);
       lastSpokenRef.current = question;
     }
-  }, [question]);
+  }, [question,speak]);
 
   return (
     <div className="bg-gray-800 p-4 rounded-xl shadow-md mb-4">

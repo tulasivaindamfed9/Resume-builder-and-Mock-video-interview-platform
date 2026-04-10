@@ -17,29 +17,29 @@ const InterviewSetup = ({ onStart }) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+
   const handleStart = async () => {
   if (!form.role || !form.experience || !form.skills) {
-    alert("Please fill all fields");
+    toast.error("Please fill all fields");
     return;
   }
 
   dispatch(setConfig(form));
 
   try {
-    // ✅ wait for API response
     const result = await dispatch(fetchQuestions(form));
 
-    // ✅ check if failed
     if (fetchQuestions.rejected.match(result)) {
-      alert(result.payload || "AI is busy. Please try again.");
+      toast.error(result.payload || "AI is busy. Try again!");
       return;
     }
 
-    // ✅ only start interview if success
-    onStart(form);
+    toast.success("Interview Started 🚀");
+
+    onStart(); // ✅ no need to pass form again
 
   } catch (error) {
-   toast.error(result.payload || "AI is busy. Try again!");
+    toast.error("Something went wrong");
   }
 };
 
