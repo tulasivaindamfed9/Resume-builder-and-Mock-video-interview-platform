@@ -4,6 +4,6 @@ python-dotenv
 requests
 pydantic
 
-google-generativeai
+google-genai
 google-api-python-client
 # requirements file
