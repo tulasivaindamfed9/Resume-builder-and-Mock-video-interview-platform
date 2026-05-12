@@ -206,6 +206,7 @@ return (
 
         {/* Error */}
         {error && <p className="mt-4 text-red-500">{error}</p>}
+    
 
         {/* RESUME PREVIEW */}
         {resume && resume.name && (

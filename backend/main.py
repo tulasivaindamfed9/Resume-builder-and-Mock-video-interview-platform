@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 # fastapi creates backend server and handles API requests
 from fastapi.middleware.cors import CORSMiddleware
 from ai_service import (generate_resume_summary,analyze_interview_answer,generate_interview_questions)
@@ -9,7 +9,9 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     # allow_origins=["*"],
-     allow_origins=["https://airesumemockinterviewfe.vercel.app/"],
+    # localhost:5173 for development, vercel app url for production
+    allow_origins=["http://localhost:5173", "https://airesumemockinterviewfe.vercel.app/"],
+    #  allow_origins=["https://airesumemockinterviewfe.vercel.app/"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -20,12 +22,17 @@ def home():
     return {"message": "AI Resume Builder Backend Running"}
 
 @app.post("/ai/resume-summary")
-def resume_summary(data: dict):
+def resume_summary(data: dict = Body(...)):
     summary = generate_resume_summary(data)
+    
+    # Check if AI service returned an error
+    if isinstance(summary, dict) and "error" in summary:
+        raise HTTPException(status_code=503, detail=summary["error"])
+    
     return {"summary": summary}
 
 @app.post("/ai/mock-questions")
-async def mock_questions(data: dict):
+async def mock_questions(data: dict = Body(...)):
     """
     Input:
     {
@@ -50,7 +57,7 @@ async def mock_questions(data: dict):
     return result
 
 @app.post("/ai/analyze-answer")
-async def analyze_answer(data: dict):
+async def analyze_answer(data: dict = Body(...)):
     """
     Input:
     {
@@ -65,7 +72,13 @@ async def analyze_answer(data: dict):
       improvement: "..."
     }
     """
-    return analyze_interview_answer(
+    result = analyze_interview_answer(
         data.get("question"),
         data.get("answer")
     )
+    
+    # Check if AI service returned an error
+    if isinstance(result, dict) and "error" in result:
+        raise HTTPException(status_code=503, detail=result["error"])
+    
+    return result
